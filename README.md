@@ -130,7 +130,7 @@ cannabis-order-system/
 
 ## 📸 Demo
 
-- **Frontend App**: [https://canordersystem.netlify.app/](#) (Update with your Netlify URL after deployment)
+- **Frontend App**: [Netlify Live Site](https://canordersystem.netlify.app/)
 - **Login Credentials**:
   - Staff: Username `staff`, Password `password`
   - Admin: Username `admin`, Password `password`
