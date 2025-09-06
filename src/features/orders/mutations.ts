@@ -3,31 +3,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Order, OrderStatus, Product, Patient } from "@/types";
 import { v4 as uuidv4 } from "uuid";
-
-// Mock API: In a real app, this would be an HTTP request
-const mockCreateOrder = async (
-  order: Omit<Order, "id" | "createdAt" | "status">
-) => {
-  return new Promise<Order>((resolve) => {
-    setTimeout(() => {
-      resolve({
-        ...order,
-        id: uuidv4(),
-        createdAt: new Date().toISOString(),
-        status: "pending" as OrderStatus,
-      });
-    }, 500);
-  });
-};
-
-// Mock API: Update product stock
-const mockUpdateStock = async (productId: string, quantityDeducted: number) => {
-  return new Promise<void>((resolve) => {
-    setTimeout(() => {
-      resolve();
-    }, 500);
-  });
-};
+import { getFromLocalStorage, setToLocalStorage } from "@/lib/localStorage";
 
 export function useCreateOrder() {
   const queryClient = useQueryClient();
@@ -44,9 +20,9 @@ export function useCreateOrder() {
       quantityGrams: number;
       notes?: string;
     }) => {
-      // Fetch current data from cache
-      const products = queryClient.getQueryData<Product[]>(["products"]) || [];
-      const patients = queryClient.getQueryData<Patient[]>(["patients"]) || [];
+      const products = getFromLocalStorage<Product>("products");
+      const patients = getFromLocalStorage<Patient>("patients");
+      const orders = getFromLocalStorage<Order>("orders");
 
       // Validate stock
       const product = products.find((p) => p.id === productId);
@@ -59,7 +35,6 @@ export function useCreateOrder() {
       if (!patient) {
         throw new Error("Patient not found");
       }
-      const orders = queryClient.getQueryData<Order[]>(["orders"]) || [];
       const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
       const patientOrdersThisMonth = orders.filter(
         (o) => o.patientId === patientId && o.createdAt.startsWith(currentMonth)
@@ -76,33 +51,35 @@ export function useCreateOrder() {
       }
 
       // Create order
-      const newOrder = await mockCreateOrder({
+      const newOrder: Order = {
+        id: uuidv4(),
         patientId,
         productId,
         quantityGrams,
         notes,
-      });
+        status: "pending" as OrderStatus,
+        createdAt: new Date().toISOString(),
+      };
 
-      // Update stock
-      await mockUpdateStock(productId, quantityGrams);
+      // Update local storage
+      setToLocalStorage("orders", [...orders, newOrder]);
+      setToLocalStorage(
+        "products",
+        products.map((p) =>
+          p.id === productId
+            ? { ...p, stockGrams: p.stockGrams - quantityGrams }
+            : p
+        )
+      );
 
       return newOrder;
     },
     onSuccess: (newOrder) => {
-      // Update orders cache
       queryClient.setQueryData<Order[]>(["orders"], (old = []) => [
         ...old,
         newOrder,
       ]);
-
-      // Update product stock cache
-      queryClient.setQueryData<Product[]>(["products"], (old = []) =>
-        old.map((p) =>
-          p.id === newOrder.productId
-            ? { ...p, stockGrams: p.stockGrams - newOrder.quantityGrams }
-            : p
-        )
-      );
+      queryClient.invalidateQueries({ queryKey: ["products"] });
     },
     onError: (error) => {
       alert(error.message);
@@ -110,7 +87,6 @@ export function useCreateOrder() {
   });
 }
 
-// Existing mutation for updating order status (assumed)
 export function useUpdateOrderStatus() {
   const queryClient = useQueryClient();
 
@@ -122,12 +98,11 @@ export function useUpdateOrderStatus() {
       orderId: string;
       status: OrderStatus;
     }) => {
-      // Mock API: Update order status
-      return new Promise<void>((resolve) => {
-        setTimeout(() => {
-          resolve();
-        }, 500);
-      });
+      const orders = getFromLocalStorage<Order>("orders");
+      const updatedOrders = orders.map((order) =>
+        order.id === orderId ? { ...order, status } : order
+      );
+      setToLocalStorage("orders", updatedOrders);
     },
     onSuccess: (_, { orderId, status }) => {
       queryClient.setQueryData<Order[]>(["orders"], (old = []) =>

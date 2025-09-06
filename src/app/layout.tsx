@@ -4,6 +4,7 @@ import "./globals.css";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { Navigation } from "@/components/Navigation";
+import { LocalStorageInitializer } from "@/components/LocalStorageInitializer";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,6 +23,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <AuthProvider>
           <QueryProvider>
+            <LocalStorageInitializer />
             <Navigation />
             {children}
           </QueryProvider>

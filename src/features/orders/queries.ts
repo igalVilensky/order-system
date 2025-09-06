@@ -1,25 +1,17 @@
-// src/features/orders/queries.ts
 import { useQuery } from "@tanstack/react-query";
-import { getOrders, getPatients, getProducts } from "@/lib/api";
-import { Order, Patient, Product } from "@/types";
+import { Order, Product } from "@/types";
+import { getFromLocalStorage } from "@/lib/localStorage";
 
-export const useOrders = () => {
-  return useQuery<Order[]>({
+export function useOrders() {
+  return useQuery({
     queryKey: ["orders"],
-    queryFn: getOrders,
+    queryFn: () => getFromLocalStorage<Order>("orders"),
   });
-};
+}
 
-export const usePatients = () => {
-  return useQuery<Patient[]>({
-    queryKey: ["patients"],
-    queryFn: getPatients,
-  });
-};
-
-export const useProducts = () => {
-  return useQuery<Product[]>({
+export function useProducts() {
+  return useQuery({
     queryKey: ["products"],
-    queryFn: getProducts,
+    queryFn: () => getFromLocalStorage<Product>("products"),
   });
-};
+}
